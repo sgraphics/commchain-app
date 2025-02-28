@@ -26,7 +26,7 @@ export default function AppLayout() {
   }, []);
   
   return (
-    <div className="app-layout flex h-screen bg-[#13111a] text-white overflow-hidden">
+    <div className="app-layout flex h-screen bg-[#110c1a] text-white overflow-hidden">
       {/* Sidebar */}
       <Sidebar isMobile={isMobile} />
       

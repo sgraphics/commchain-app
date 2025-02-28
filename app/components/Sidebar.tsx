@@ -19,7 +19,7 @@ export default function Sidebar({ isMobile }: SidebarProps) {
   }, [isMobile]);
 
   return (
-    <div className={`sidebar bg-[#13111a] text-white transition-all duration-300 flex flex-col ${isCollapsed ? 'w-16' : 'w-64'} ${isMapFullscreen ? 'w-full h-full absolute z-50' : ''}`}>
+    <div className={`sidebar bg-[#1a1328] text-white transition-all duration-300 flex flex-col ${isCollapsed ? 'w-16' : 'w-64'} ${isMapFullscreen ? 'w-full h-full absolute z-50' : ''}`}>
       {/* Logo and burger menu */}
       <div className="flex items-center p-4 justify-between">
         {!isCollapsed && (
@@ -59,13 +59,13 @@ export default function Sidebar({ isMobile }: SidebarProps) {
       <div className={`stats-section mt-4 ${isCollapsed ? 'px-2' : 'px-4'}`}>
         {!isCollapsed ? (
           <>
-            <div className="bg-[#1e1b29] rounded-lg p-3 mb-2">
+            <div className="bg-[#ffddd0] rounded-lg p-3 mb-2 text-black">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-segoe">Awards</span>
                 <span className="font-bold">32 NFTs</span>
               </div>
             </div>
-            <div className="bg-[#1e1b29] rounded-lg p-3">
+            <div className="bg-[#ffddd0] rounded-lg p-3 text-black">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-segoe">Rewards</span>
                 <span className="font-bold">12 323 TAG</span>
@@ -74,10 +74,10 @@ export default function Sidebar({ isMobile }: SidebarProps) {
           </>
         ) : (
           <div className="flex flex-col items-center">
-            <div className="bg-[#1e1b29] rounded-lg p-2 mb-2 w-full flex justify-center">
+            <div className="bg-[#ffddd0] rounded-lg p-2 mb-2 w-full flex justify-center text-black">
               <span className="font-bold text-xs">32</span>
             </div>
-            <div className="bg-[#1e1b29] rounded-lg p-2 w-full flex justify-center">
+            <div className="bg-[#ffddd0] rounded-lg p-2 w-full flex justify-center text-black">
               <span className="font-bold text-xs">12K</span>
             </div>
           </div>
@@ -91,7 +91,7 @@ export default function Sidebar({ isMobile }: SidebarProps) {
         </h2>
         <div className={`task-list ${isCollapsed ? 'px-2' : 'px-4'}`}>
           {[1, 2, 3, 4].map((item) => (
-            <div key={item} className="bg-[#1e1b29] rounded-lg p-3 mb-2 flex items-center justify-between">
+            <div key={item} className="bg-[#281e3c] rounded-lg p-3 mb-2 flex items-center justify-between">
               {!isCollapsed && (
                 <>
                   <div>
