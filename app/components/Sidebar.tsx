@@ -22,45 +22,50 @@ export default function Sidebar({ isMobile }: SidebarProps) {
 
   return (
     <div className={`sidebar bg-[#1a1328] text-white transition-all duration-300 flex flex-col ${isCollapsed ? 'w-16' : 'w-64'} ${isMapFullscreen ? 'w-full h-full absolute z-50' : ''}`}>
-      {/* Logo and burger menu */}
+      {/* Logo and user info */}
       <div className="flex items-center p-4 justify-between">
         {!isCollapsed && (
           <div className="flex items-center">
-            <div className="w-8 h-8 relative mr-2">
-              <Image 
-                src="/logo.svg" 
-                alt="CommChain Logo" 
-                width={32} 
-                height={32}
-                className="text-pink-500"
-              />
-            </div>
-            <h1 className="text-xl font-bold font-segoe">commchain</h1>
+            <Image src="/logo.svg" alt="CommChain Logo" width={32} height={32} />
+            <span className="ml-2 text-xl font-semibold">CommChain</span>
           </div>
         )}
-        {!isCollapsed && accountId && (
-          <div className="text-xs text-gray-400 truncate max-w-[150px] mt-1">
-            {accountId}
-          </div>
+        {isCollapsed && (
+          <Image src="/logo.svg" alt="CommChain Logo" width={32} height={32} className="mx-auto" />
         )}
-        <button 
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-2 rounded-md hover:bg-gray-700"
-        >
-          {isCollapsed ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="3" y1="12" x2="21" y2="12"></line>
-              <line x1="3" y1="6" x2="21" y2="6"></line>
-              <line x1="3" y1="18" x2="21" y2="18"></line>
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          )}
-        </button>
       </div>
+      
+      {/* User account and logout link */}
+      {!isCollapsed && accountId && (
+        <div className="px-4 py-2 mt-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm truncate max-w-[70%]" title={accountId}>
+              {accountId}
+            </span>
+            <button 
+              onClick={signOut}
+              className="text-xs text-gray-400 hover:text-white transition-colors"
+            >
+              log-out
+            </button>
+          </div>
+        </div>
+      )}
+      {isCollapsed && accountId && (
+        <div className="px-2 py-2 border-b border-[#281e3c] mb-2 flex justify-center">
+          <button 
+            onClick={signOut}
+            title={`Log out ${accountId}`}
+            className="text-xs text-gray-400 hover:text-white transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Stats Section */}
       <div className={`stats-section mt-4 ${isCollapsed ? 'px-2' : 'px-4'}`}>
@@ -134,43 +139,33 @@ export default function Sidebar({ isMobile }: SidebarProps) {
         </div>
       </div>
 
-      {/* Map Section - Now taking 1/3 of screen height with no margins */}
-      <div className="mt-auto">
-        <div className={`relative w-full h-[33.333vh] ${isMapFullscreen ? 'fixed inset-0 h-screen z-50' : ''}`}>
-          <Map />
-          <div className="absolute bottom-2 right-2 z-10">
-            <button 
-              onClick={() => setIsMapFullscreen(!isMapFullscreen)}
-              className="bg-white/80 text-black text-xs py-1 px-2 rounded hover:bg-white font-segoe"
-            >
-              {isMapFullscreen ? 'exit fullscreen' : 'full screen'}
-            </button>
+      {/* Map section - Edge to edge, 1/3 height from bottom */}
+      <div className="mt-auto w-full">
+        <div className="relative w-full h-[33.333vh]">
+          <div className={`w-full h-full ${isMapFullscreen ? 'fixed inset-0 z-50 h-screen' : ''}`}>
+            <Map isFullscreen={isMapFullscreen} />
           </div>
-        </div>
-      </div>
-
-      <div className={`mt-auto mb-4 ${isCollapsed ? 'px-2' : 'px-4'}`}>
-        <button
-          onClick={signOut}
-          className={`w-full bg-[#281e3c] hover:bg-[#342a4a] text-white rounded-lg transition-colors duration-200 flex items-center justify-center ${isCollapsed ? 'py-2' : 'py-2 px-3'}`}
-        >
-          {isCollapsed ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
-          ) : (
-            <>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                <polyline points="16 17 21 12 16 7"></polyline>
-                <line x1="21" y1="12" x2="9" y2="12"></line>
+          <button
+            onClick={() => setIsMapFullscreen(!isMapFullscreen)}
+            className="absolute top-2 right-2 bg-white/80 hover:bg-white p-1 rounded-md z-10"
+          >
+            {isMapFullscreen ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="4 14 10 14 10 20"></polyline>
+                <polyline points="20 10 14 10 14 4"></polyline>
+                <line x1="14" y1="10" x2="21" y2="3"></line>
+                <line x1="3" y1="21" x2="10" y2="14"></line>
               </svg>
-              Sign Out
-            </>
-          )}
-        </button>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <polyline points="9 21 3 21 3 15"></polyline>
+                <line x1="21" y1="3" x2="14" y2="10"></line>
+                <line x1="3" y1="21" x2="10" y2="14"></line>
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
