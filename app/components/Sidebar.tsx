@@ -1,16 +1,22 @@
+"use client";
+
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useNearWallet } from '../contexts/NearWalletSelectorContext';
+import { taskData, Task } from '../data/mockTasks';
 
 // Dynamically import the Map component with no SSR
 const Map = dynamic(() => import('./Map'), { ssr: false });
 
 interface SidebarProps {
   isMobile: boolean;
+  currentTaskId?: string;
+  onTaskSelect?: (taskId: string) => void;
 }
 
-export default function Sidebar({ isMobile }: SidebarProps) {
+export default function Sidebar({ isMobile, currentTaskId, onTaskSelect }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
   const { accountId, signOut } = useNearWallet();
@@ -20,6 +26,13 @@ export default function Sidebar({ isMobile }: SidebarProps) {
     setIsCollapsed(isMobile);
   }, [isMobile]);
 
+  // Handle task selection
+  const handleTaskClick = (taskId: string) => {
+    if (onTaskSelect) {
+      onTaskSelect(taskId);
+    }
+  };
+
   return (
     <div className={`sidebar bg-[#1a1328] text-white transition-all duration-300 flex flex-col ${isCollapsed ? 'w-16' : 'w-64'} ${isMapFullscreen ? 'w-full h-full absolute z-50' : ''}`}>
       {/* Logo and user info */}
@@ -27,7 +40,7 @@ export default function Sidebar({ isMobile }: SidebarProps) {
         {!isCollapsed && (
           <div className="flex items-center">
             <Image src="/logo.svg" alt="CommChain Logo" width={32} height={32} />
-            <span className="ml-2 text-xl font-semibold">CommChain</span>
+            <span className="ml-2 text-xl font-semibold">commchain</span>
           </div>
         )}
         {isCollapsed && (
@@ -80,7 +93,7 @@ export default function Sidebar({ isMobile }: SidebarProps) {
             <div className="bg-[#ffddd0] rounded-lg p-3 text-black">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-segoe">Rewards</span>
-                <span className="font-bold">12 323 TAG</span>
+                <span className="font-bold">2,323 USDC</span>
               </div>
             </div>
           </>
@@ -96,41 +109,51 @@ export default function Sidebar({ isMobile }: SidebarProps) {
         )}
       </div>
 
-      {/* Tasks Section */}
+      {/* Tasks Section - Now using the JSON data */}
       <div className="tasks-section mt-6">
         <h2 className={`text-gray-400 ${isCollapsed ? 'text-center text-xs mb-2' : 'px-4 mb-3'} font-segoe`}>
           {isCollapsed ? 'Tasks' : 'Tasks'}
         </h2>
         <div className={`task-list ${isCollapsed ? 'px-2' : 'px-4'}`}>
-          {[1, 2, 3, 4].map((item) => (
-            <div key={item} className="bg-[#281e3c] rounded-lg p-3 mb-2 flex items-center justify-between">
+          {taskData.map((task) => (
+            <div 
+              key={task.id} 
+              className={`bg-[#281e3c] rounded-lg p-3 mb-2 flex items-center justify-between cursor-pointer hover:bg-[#332348] transition-colors
+                ${currentTaskId === task.id ? 'border border-[#ff6b35]' : ''}
+              `}
+              onClick={() => task.can_open && handleTaskClick(task.id)}
+            >
               {!isCollapsed && (
                 <>
                   <div>
-                    <div className="font-medium font-segoe">Demine Kursk region</div>
-                    <div className="text-xs text-gray-400">Demine Kursk region</div>
+                    <div className="font-medium font-segoe">{task.name}</div>
+                    <div className="text-xs text-gray-400">{task.location}</div>
                   </div>
                   <div className="flex items-center">
-                    <span className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2">6</span>
+                    <span className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2">
+                      {task.urgency}
+                    </span>
                     <span className="text-gray-400 flex items-center">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                         <circle cx="12" cy="7" r="4"></circle>
                       </svg>
-                      6
+                      {task.participants}
                     </span>
                   </div>
                 </>
               )}
               {isCollapsed && (
                 <div className="w-full flex flex-col items-center">
-                  <span className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center mb-1">6</span>
+                  <span className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center mb-1">
+                    {task.urgency}
+                  </span>
                   <span className="text-gray-400 text-xs flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                       <circle cx="12" cy="7" r="4"></circle>
                     </svg>
-                    6
+                    {task.participants}
                   </span>
                 </div>
               )}

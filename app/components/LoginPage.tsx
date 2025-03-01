@@ -13,7 +13,7 @@ export default function LoginPage() {
           <div className="w-12 h-12 relative mr-3">
             <Image 
               src="/logo.svg" 
-              alt="CommChain Logo" 
+              alt="Commchain Logo" 
               width={48} 
               height={48}
             />
@@ -24,11 +24,11 @@ export default function LoginPage() {
         <h2 className="text-xl font-segoe text-center mb-4">Precision Field Operations Platform</h2>
         
         <p className="text-gray-300 mb-6 text-center">
-          Connect your NEAR wallet to access the CommChain platform for coordinating and monitoring field operations with precision and accountability.
+          Connect your NEAR wallet to access the Commchain platform for coordinating and monitoring field operations with precision and accountability.
         </p>
         
         <div className="bg-[#281e3c] p-4 rounded-lg mb-6">
-          <h3 className="font-segoe font-semibold text-[#ff6b35] mb-3">What you can do with CommChain:</h3>
+          <h3 className="font-segoe font-semibold text-[#ff6b35] mb-3">What you can do with Commchain:</h3>
           <ul className="space-y-2 text-sm">
             <li className="flex items-start">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#ff6b35] mr-2 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

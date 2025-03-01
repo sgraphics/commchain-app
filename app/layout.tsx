@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CommChain App",
+  title: "commchain",
   description: "Precision field operations",
 };
 

@@ -1,9 +1,12 @@
+"use client";
+
 import { useState, useRef, useEffect } from 'react';
 import { useNearWallet } from '../contexts/NearWalletSelectorContext';
 import * as crypto from 'crypto';
 import { encode as encodeBase64, decode as decodeBase64 } from '@stablelib/base64';
 import { encode as encodeUTF8 } from '@stablelib/utf8';
 import { uploadToStoracha } from '../utils/storacha';
+import { getTaskById, Task } from '../data/mockTasks';
 
 // Public key for encryption (store this in your .env.local as NEXT_PUBLIC_RSA_PUBLIC_KEY)
 // It's safe to expose the public key
@@ -17,8 +20,8 @@ iQ/oz9IHAPRdazBSmSsTS4+jEd1nSNO/+GdoOIzgxENc6KRbmvR0tyhpWbvuLC4f
 PwIDAQAB
 -----END PUBLIC KEY-----`;
 
-// Task interface
-interface Task {
+// Task message interface
+interface TaskMessage {
   id: number;
   taskId: string;
   evidence: string;
@@ -27,15 +30,31 @@ interface Task {
   timestamp: number;
 }
 
-export default function ChatArea() {
+// Add taskId to props
+interface ChatAreaProps {
+  taskId?: string;
+}
+
+export default function ChatArea({ taskId }: ChatAreaProps) {
   const [message, setMessage] = useState('');
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<TaskMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentTask, setCurrentTask] = useState<Task | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { accountId, contract } = useNearWallet();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Load task details when taskId changes
+  useEffect(() => {
+    if (taskId) {
+      const task = getTaskById(taskId);
+      setCurrentTask(task || null);
+    } else {
+      setCurrentTask(null);
+    }
+  }, [taskId]);
 
   // Load tasks from the contract
   useEffect(() => {
@@ -54,13 +73,19 @@ export default function ChatArea() {
         const allTasks = await contract.get_all_tasks();
         console.log("Received tasks:", allTasks);
         
+        // Filter tasks by taskId if provided
+        let filteredTasks = allTasks;
+        if (taskId) {
+          filteredTasks = allTasks.filter(task => task.taskId === taskId);
+          console.log("Filtered tasks for taskId", taskId, ":", filteredTasks);
+        }
+        
         // Sort tasks by timestamp (newest first)
-        const sortedTasks = allTasks.sort((a, b) => b.timestamp - a.timestamp);
+        const sortedTasks = filteredTasks.sort((a, b) => b.timestamp - a.timestamp);
         console.log("Sorted tasks:", sortedTasks);
         setTasks(sortedTasks);
       } catch (error) {
         console.error('Error loading tasks:', error);
-        // Don't set mock data, just show an empty state
         setTasks([]);
       } finally {
         setIsLoading(false);
@@ -68,7 +93,7 @@ export default function ChatArea() {
     };
     
     loadTasks();
-  }, [contract]);
+  }, [contract, taskId]);  // Re-run when taskId changes
 
   // Scroll to bottom when new tasks are loaded
   useEffect(() => {
@@ -180,13 +205,13 @@ export default function ChatArea() {
         console.log("Image uploaded with CID:", evidence);
       }
       
-      // Generate a unique task ID
-      const taskId = `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      console.log("Generated task ID:", taskId);
+      // Use the selected taskId from props or generate a new one if not provided
+      const currentTaskId = taskId || `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      console.log("Using task ID:", currentTaskId);
       
       // Register the task on the blockchain
       console.log("Registering task on blockchain...");
-      const result = await contract.register_task({ taskId, evidence });
+      const result = await contract.register_task({ taskId: currentTaskId, evidence });
       console.log("Task registration result:", result);
       
       // Clear the form
@@ -197,7 +222,10 @@ export default function ChatArea() {
       console.log("Reloading tasks after sending message...");
       const allTasks = await contract.get_all_tasks();
       console.log("Reloaded tasks:", allTasks);
-      const sortedTasks = allTasks.sort((a, b) => b.timestamp - a.timestamp);
+      
+      // Filter tasks by taskId if provided, and sort
+      let filteredTasks = taskId ? allTasks.filter(task => task.taskId === taskId) : allTasks;
+      const sortedTasks = filteredTasks.sort((a, b) => b.timestamp - a.timestamp);
       setTasks(sortedTasks);
     } catch (error) {
       console.error('Error sending message:', error);
@@ -212,12 +240,88 @@ export default function ChatArea() {
     }
   };
 
+  // Function to render task details - simplified
+  const renderTaskDetails = () => {
+    if (!currentTask) return null;
+
+    return (
+      <div className="p-4 rounded-2xl">
+        <div className="bg-[#1a1328] rounded-2xl overflow-hidden">
+          
+          {/* Task content - simple flex layout */}
+          <div className="flex flex-row">
+            {/* Left side - task description */}
+            <div className="p-4 flex-1">
+              
+              <h2 className="text-xl font-semibold">{currentTask.name}</h2>
+              <div className="text-sm text-gray-400 mt-1 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                {currentTask.location}
+              </div>
+              <p className="text-sm mt-4">{currentTask.instructions}</p>
+            </div>
+            
+            {/* Vertical divider */}
+            <div className="w-px bg-gray-700"></div>
+            
+            {/* Right side - reward and verifiers */}
+            <div className="p-4 flex items-center justify-center space-x-6" style={{ width: '240px' }}>
+              {/* Reward */}
+              <div className="flex flex-col items-center">
+                <div className="text-2xl font-bold">
+                  {currentTask.reward_usdc} USDC
+                </div>
+                <div className="text-sm text-gray-400">
+                  {currentTask.reward_unit && currentTask.reward_unit > 1 ? 
+                    `per ${currentTask.reward_unit} units` : 
+                    'per item'}
+                </div>
+              </div>
+              
+              {/* Vertical divider */}
+              <div className="h-16 w-0.5 bg-gray-600"></div>
+              
+              {/* Verifiers */}
+              <div className="flex flex-col items-center">
+                <div className="flex space-x-2">
+                  {currentTask.ai_verification_instructions && (
+                    <div className="bg-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="12" cy="14" r="2"></circle>
+                      </svg>
+                    </div>
+                  )}
+                  
+                  {currentTask.human_verification_instructions && (
+                    <div className="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <div className="text-sm text-gray-400 mt-3">verifiers</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col h-full">
-      {/* Chat header */}
-      <div className="p-4 border-b border-gray-700">
-        <h2 className="text-xl font-semibold">Field Operations</h2>
-      </div>
+      {/* Task Details Panel */}
+      {currentTask ? renderTaskDetails() : (
+        <div className="p-4 border-b border-gray-700">
+          <h2 className="text-xl font-semibold">Field Operations</h2>
+        </div>
+      )}
       
       {/* Messages area */}
       <div className="flex-grow overflow-y-auto p-4 space-y-4">
@@ -227,7 +331,7 @@ export default function ChatArea() {
           </div>
         ) : tasks.length === 0 ? (
           <div className="text-center text-gray-400 mt-8">
-            No tasks yet. Send a message to create one.
+            {currentTask ? 'No reports for this task yet. Send a message to create one.' : 'No tasks yet. Send a message to create one.'}
           </div>
         ) : (
           tasks.map((task) => (
@@ -305,7 +409,10 @@ export default function ChatArea() {
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Type a message..."
+            placeholder={currentTask ? 
+              `Report for ${currentTask.name}...` : 
+              "Type a message..."
+            }
             className="flex-grow bg-[#2a1e3d] text-white rounded-l-lg px-4 py-2 focus:outline-none"
           />
           

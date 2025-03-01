@@ -8,6 +8,7 @@ import { useNearWallet } from '../contexts/NearWalletSelectorContext';
 
 export default function AppLayout() {
   const [isMobile, setIsMobile] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>(undefined);
   const { accountId } = useNearWallet();
   
   // Check if the screen is mobile size
@@ -26,16 +27,21 @@ export default function AppLayout() {
     return <LoginPage />;
   }
   
-  // Otherwise, show the main app
+  // Handle task selection
+  const handleTaskSelect = (taskId: string) => {
+    setSelectedTaskId(taskId);
+  };
+
   return (
     <div className="app-layout flex h-screen bg-[#110c1a] text-white overflow-hidden">
-      {/* Sidebar */}
-      <Sidebar isMobile={isMobile} />
-      
-      {/* Main content area */}
-      <div className="flex-grow overflow-hidden">
-        <ChatArea />
-      </div>
+      <Sidebar 
+        isMobile={isMobile} 
+        currentTaskId={selectedTaskId}
+        onTaskSelect={handleTaskSelect}
+      />
+      <main className="flex-1 overflow-hidden">
+        <ChatArea taskId={selectedTaskId} />
+      </main>
     </div>
   );
 } 
