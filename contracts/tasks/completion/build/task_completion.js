@@ -2529,24 +2529,115 @@ function NearBindgen({
   };
 }
 
-var _dec, _dec2, _dec3, _class, _class2;
-let HelloNear = (_dec = NearBindgen({}), _dec2 = view(), _dec3 = call({}), _dec(_class = (_class2 = class HelloNear {
-  static schema = {
-    greeting: 'string'
-  };
+var _dec, _dec2, _dec3, _dec4, _dec5, _dec6, _dec7, _class, _class2;
+
+// Simple task type
+let HelloNear = (_dec = NearBindgen({}), _dec2 = view(), _dec3 = call({}), _dec4 = call({}), _dec5 = view(), _dec6 = call({}), _dec7 = view(), _dec(_class = (_class2 = class HelloNear {
   greeting = 'Hello';
-  // This method is read-only and can be called for free
+  validator = '';
+  tasks = [];
+  nextId = 1;
+  static schema = {
+    greeting: 'string',
+    validator: 'string',
+    tasks: 'array',
+    nextId: 'number'
+  };
   get_greeting() {
     return this.greeting;
   }
-  // This method changes the state, for which it cost gas
   set_greeting({
     greeting
   }) {
     log(`Saving greeting ${greeting}`);
     this.greeting = greeting;
   }
-}, _applyDecoratedDescriptor(_class2.prototype, "get_greeting", [_dec2], Object.getOwnPropertyDescriptor(_class2.prototype, "get_greeting"), _class2.prototype), _applyDecoratedDescriptor(_class2.prototype, "set_greeting", [_dec3], Object.getOwnPropertyDescriptor(_class2.prototype, "set_greeting"), _class2.prototype), _class2)) || _class);
+  set_validator({
+    validator
+  }) {
+    this.validator = validator;
+    log(`Validator set to ${validator}`);
+  }
+  get_validator() {
+    return this.validator;
+  }
+  register_task({
+    taskId,
+    evidence
+  }) {
+    const user = predecessorAccountId();
+    const id = this.nextId++;
+    const task = {
+      id,
+      taskId,
+      evidence,
+      result: "",
+      status: 0,
+      // 0 = registered
+      user
+    };
+    this.tasks.push(task);
+    log(`Task registered with ID: ${id}`);
+    return id;
+  }
+  get_all_tasks() {
+    return this.tasks;
+  }
+}, _applyDecoratedDescriptor(_class2.prototype, "get_greeting", [_dec2], Object.getOwnPropertyDescriptor(_class2.prototype, "get_greeting"), _class2.prototype), _applyDecoratedDescriptor(_class2.prototype, "set_greeting", [_dec3], Object.getOwnPropertyDescriptor(_class2.prototype, "set_greeting"), _class2.prototype), _applyDecoratedDescriptor(_class2.prototype, "set_validator", [_dec4], Object.getOwnPropertyDescriptor(_class2.prototype, "set_validator"), _class2.prototype), _applyDecoratedDescriptor(_class2.prototype, "get_validator", [_dec5], Object.getOwnPropertyDescriptor(_class2.prototype, "get_validator"), _class2.prototype), _applyDecoratedDescriptor(_class2.prototype, "register_task", [_dec6], Object.getOwnPropertyDescriptor(_class2.prototype, "register_task"), _class2.prototype), _applyDecoratedDescriptor(_class2.prototype, "get_all_tasks", [_dec7], Object.getOwnPropertyDescriptor(_class2.prototype, "get_all_tasks"), _class2.prototype), _class2)) || _class);
+function get_all_tasks() {
+  const _state = HelloNear._getState();
+  if (!_state && HelloNear._requireInit()) {
+    throw new Error("Contract must be initialized");
+  }
+  const _contract = HelloNear._create();
+  if (_state) {
+    HelloNear._reconstruct(_contract, _state);
+  }
+  const _args = HelloNear._getArgs();
+  const _result = _contract.get_all_tasks(_args);
+  if (_result !== undefined) if (_result && _result.constructor && _result.constructor.name === "NearPromise") _result.onReturn();else env.value_return(HelloNear._serialize(_result, true));
+}
+function register_task() {
+  const _state = HelloNear._getState();
+  if (!_state && HelloNear._requireInit()) {
+    throw new Error("Contract must be initialized");
+  }
+  const _contract = HelloNear._create();
+  if (_state) {
+    HelloNear._reconstruct(_contract, _state);
+  }
+  const _args = HelloNear._getArgs();
+  const _result = _contract.register_task(_args);
+  HelloNear._saveToStorage(_contract);
+  if (_result !== undefined) if (_result && _result.constructor && _result.constructor.name === "NearPromise") _result.onReturn();else env.value_return(HelloNear._serialize(_result, true));
+}
+function get_validator() {
+  const _state = HelloNear._getState();
+  if (!_state && HelloNear._requireInit()) {
+    throw new Error("Contract must be initialized");
+  }
+  const _contract = HelloNear._create();
+  if (_state) {
+    HelloNear._reconstruct(_contract, _state);
+  }
+  const _args = HelloNear._getArgs();
+  const _result = _contract.get_validator(_args);
+  if (_result !== undefined) if (_result && _result.constructor && _result.constructor.name === "NearPromise") _result.onReturn();else env.value_return(HelloNear._serialize(_result, true));
+}
+function set_validator() {
+  const _state = HelloNear._getState();
+  if (!_state && HelloNear._requireInit()) {
+    throw new Error("Contract must be initialized");
+  }
+  const _contract = HelloNear._create();
+  if (_state) {
+    HelloNear._reconstruct(_contract, _state);
+  }
+  const _args = HelloNear._getArgs();
+  const _result = _contract.set_validator(_args);
+  HelloNear._saveToStorage(_contract);
+  if (_result !== undefined) if (_result && _result.constructor && _result.constructor.name === "NearPromise") _result.onReturn();else env.value_return(HelloNear._serialize(_result, true));
+}
 function set_greeting() {
   const _state = HelloNear._getState();
   if (!_state && HelloNear._requireInit()) {
@@ -2575,5 +2666,5 @@ function get_greeting() {
   if (_result !== undefined) if (_result && _result.constructor && _result.constructor.name === "NearPromise") _result.onReturn();else env.value_return(HelloNear._serialize(_result, true));
 }
 
-export { get_greeting, set_greeting };
+export { get_all_tasks, get_greeting, get_validator, register_task, set_greeting, set_validator };
 //# sourceMappingURL=task_completion.js.map
