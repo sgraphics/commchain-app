@@ -118,23 +118,33 @@ export default function Sidebar({ isMobile, currentTaskId, onTaskSelect }: Sideb
           {taskData.map((task) => (
             <div 
               key={task.id} 
-              className={`bg-[#281e3c] rounded-lg p-3 mb-2 flex items-center justify-between cursor-pointer hover:bg-[#332348] transition-colors
-                ${currentTaskId === task.id ? 'border border-[#ff6b35]' : ''}
+              style={{ 
+                backgroundColor: currentTaskId === task.id ? '#ff8f74' : '#281e3c'
+              }}
+              className={`rounded-lg p-3 mb-2 flex items-center justify-between cursor-pointer transition-colors
+                ${currentTaskId === task.id 
+                  ? 'text-black' 
+                  : 'text-white hover:bg-[#3a2e4d]'
+                }
               `}
               onClick={() => task.can_open && handleTaskClick(task.id)}
             >
               {!isCollapsed && (
                 <>
                   <div>
-                    <div className="font-medium font-segoe">{task.name}</div>
-                    <div className="text-xs text-gray-400">{task.location}</div>
+                    <div className={`font-medium font-segoe ${currentTaskId === task.id ? 'text-black' : ''}`}>
+                      {task.name}
+                    </div>
+                    <div className={`text-xs ${currentTaskId === task.id ? 'text-gray-800' : 'text-gray-400'}`}>
+                      {task.location}
+                    </div>
                   </div>
                   <div className="flex items-center">
-                    <span className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2">
+                    <span className={`${currentTaskId === task.id ? 'bg-black text-white' : 'bg-red-500 text-white'} rounded-full w-6 h-6 flex items-center justify-center mr-2`}>
                       {task.urgency}
                     </span>
-                    <span className="text-gray-400 flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                    <span className={`${currentTaskId === task.id ? 'text-gray-800' : 'text-gray-400'} flex items-center`}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={currentTaskId === task.id ? "#333333" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                         <circle cx="12" cy="7" r="4"></circle>
                       </svg>
@@ -145,11 +155,11 @@ export default function Sidebar({ isMobile, currentTaskId, onTaskSelect }: Sideb
               )}
               {isCollapsed && (
                 <div className="w-full flex flex-col items-center">
-                  <span className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center mb-1">
+                  <span className={`${currentTaskId === task.id ? 'bg-black text-white' : 'bg-red-500 text-white'} rounded-full w-6 h-6 flex items-center justify-center mb-1`}>
                     {task.urgency}
                   </span>
-                  <span className="text-gray-400 text-xs flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                  <span className={`${currentTaskId === task.id ? 'text-gray-800' : 'text-gray-400'} text-xs flex items-center`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={currentTaskId === task.id ? "#333333" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                       <circle cx="12" cy="7" r="4"></circle>
                     </svg>
@@ -166,7 +176,12 @@ export default function Sidebar({ isMobile, currentTaskId, onTaskSelect }: Sideb
       <div className="mt-auto w-full">
         <div className="relative w-full h-[33.333vh]">
           <div className={`w-full h-full ${isMapFullscreen ? 'fixed inset-0 z-50 h-screen' : ''}`}>
-            <Map isFullscreen={isMapFullscreen} />
+            <Map 
+              isFullscreen={isMapFullscreen} 
+              tasks={taskData}
+              selectedTaskId={currentTaskId}
+              onTaskSelect={handleTaskClick}
+            />
           </div>
           <button
             onClick={() => setIsMapFullscreen(!isMapFullscreen)}
