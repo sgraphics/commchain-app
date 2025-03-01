@@ -1,8 +1,15 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
-export default function Map() {
+// Define the props interface for the Map component
+interface MapProps {
+  isFullscreen?: boolean;
+}
+
+export default function Map({ isFullscreen = false }: MapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
@@ -48,10 +55,12 @@ export default function Map() {
             position: 'bottomright'
           }).addTo(map);
           
-          // Ensure proper sizing
-          setTimeout(() => {
-            map.invalidateSize();
-          }, 100);
+          // Adjust the map when fullscreen status changes
+          if (isFullscreen) {
+            setTimeout(() => {
+              map.invalidateSize();
+            }, 100);
+          }
         }
       });
     }
@@ -62,7 +71,7 @@ export default function Map() {
         // If we had a reference to the map instance, we could destroy it here
       }
     };
-  }, []);
+  }, [isFullscreen]); // Re-initialize when fullscreen changes
   
   return (
     <div className="map-container h-full w-full">

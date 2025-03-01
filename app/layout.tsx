@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { NearWalletSelectorContextProvider } from "./contexts/NearWalletSelectorContext";
+import { NearWalletSelectorProvider } from "./contexts/NearWalletSelectorContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,9 +36,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <NearWalletSelectorContextProvider>
+        <NearWalletSelectorProvider>
           {children}
-        </NearWalletSelectorContextProvider>
+        </NearWalletSelectorProvider>
       </body>
     </html>
   );

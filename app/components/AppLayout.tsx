@@ -8,28 +8,21 @@ import { useNearWallet } from '../contexts/NearWalletSelectorContext';
 
 export default function AppLayout() {
   const [isMobile, setIsMobile] = useState(false);
-  const { isSignedIn } = useNearWallet();
+  const { accountId } = useNearWallet();
   
   // Check if the screen is mobile size
   useEffect(() => {
-    const checkIfMobile = () => {
+    const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
     };
     
-    // Initial check
-    checkIfMobile();
-    
-    // Add event listener for window resize
-    window.addEventListener('resize', checkIfMobile);
-    
-    // Cleanup
-    return () => {
-      window.removeEventListener('resize', checkIfMobile);
-    };
+    handleResize(); // Initial check
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
   
   // If not signed in, show login page
-  if (!isSignedIn) {
+  if (!accountId) {
     return <LoginPage />;
   }
   
