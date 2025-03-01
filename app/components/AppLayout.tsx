@@ -3,9 +3,12 @@
 import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import ChatArea from './ChatArea';
+import LoginPage from './LoginPage';
+import { useNearWallet } from '../contexts/NearWalletSelectorContext';
 
 export default function AppLayout() {
   const [isMobile, setIsMobile] = useState(false);
+  const { isSignedIn } = useNearWallet();
   
   // Check if the screen is mobile size
   useEffect(() => {
@@ -25,6 +28,12 @@ export default function AppLayout() {
     };
   }, []);
   
+  // If not signed in, show login page
+  if (!isSignedIn) {
+    return <LoginPage />;
+  }
+  
+  // Otherwise, show the main app
   return (
     <div className="app-layout flex h-screen bg-[#110c1a] text-white overflow-hidden">
       {/* Sidebar */}

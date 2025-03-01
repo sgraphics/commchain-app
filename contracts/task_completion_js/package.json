@@ -1,0 +1,13 @@
+{
+  "name": "task-completion-contract",
+  "version": "1.0.0",
+  "description": "NEAR Task Completion Contract",
+  "main": "index.js",
+  "scripts": {
+    "build": "near-sdk-js build src/contract.js build/task_completion.wasm",
+    "deploy": "near deploy commchain.testnet build/task_completion.wasm --initFunction init --initArgs '{\"ownerId\": \"commchain.testnet\"}'"
+  },
+  "dependencies": {
+    "near-sdk-js": "^1.0.0"
+  }
+} 

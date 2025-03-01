@@ -1,0 +1,24 @@
+{
+  "name": "task_completion",
+  "version": "1.0.0",
+  "license": "(MIT AND Apache-2.0)",
+  "type": "module",
+  "scripts": {
+    "build": "DEBUG=near-sdk-js* near-sdk-js build src/contract.ts build/task_completion.wasm",
+    "build:verbose": "DEBUG=* near-sdk-js build src/contract.ts build/task_completion.wasm",
+    "test": "$npm_execpath run build && ava -- ./build/task_completion.wasm"
+  },
+  "dependencies": {
+    "near-sdk-js": "2.0.0"
+  },
+  "devDependencies": {
+    "ava": "^6.1.3",
+    "near-workspaces": "^4.0.0",
+    "typescript": "^5.4.5"
+  },
+  "ava": {
+    "files": [
+      "sandbox-test/*.ava.js"
+    ]
+  }
+}

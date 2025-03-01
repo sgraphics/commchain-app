@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
+import { useNearWallet } from '../contexts/NearWalletSelectorContext';
 
 // Dynamically import the Map component with no SSR
 const Map = dynamic(() => import('./Map'), { ssr: false });
@@ -12,6 +13,7 @@ interface SidebarProps {
 export default function Sidebar({ isMobile }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
+  const { accountId, signOut } = useNearWallet();
   
   // Automatically collapse on mobile
   useEffect(() => {
@@ -34,6 +36,11 @@ export default function Sidebar({ isMobile }: SidebarProps) {
               />
             </div>
             <h1 className="text-xl font-bold font-segoe">commchain</h1>
+          </div>
+        )}
+        {!isCollapsed && accountId && (
+          <div className="text-xs text-gray-400 truncate max-w-[150px] mt-1">
+            {accountId}
           </div>
         )}
         <button 
@@ -140,6 +147,30 @@ export default function Sidebar({ isMobile }: SidebarProps) {
             </button>
           </div>
         </div>
+      </div>
+
+      <div className={`mt-auto mb-4 ${isCollapsed ? 'px-2' : 'px-4'}`}>
+        <button
+          onClick={signOut}
+          className={`w-full bg-[#281e3c] hover:bg-[#342a4a] text-white rounded-lg transition-colors duration-200 flex items-center justify-center ${isCollapsed ? 'py-2' : 'py-2 px-3'}`}
+        >
+          {isCollapsed ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          ) : (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+              Sign Out
+            </>
+          )}
+        </button>
       </div>
     </div>
   );
