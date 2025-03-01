@@ -5,6 +5,10 @@ const nextConfig = {
   // Exclude from file tracing
   outputFileTracingExcludes: {
     '*': ['**/contracts/**'],
+  },
+
+  experimental: {
+    serverComponentsExternalPackages: ['tweetnacl', '@web3-storage/w3up-client']
   }
 };
 
