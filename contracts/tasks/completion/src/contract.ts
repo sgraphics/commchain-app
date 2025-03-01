@@ -1,5 +1,5 @@
 // Find all our documentation at https://docs.near.org
-import { NearBindgen, near, call, view } from 'near-sdk-js';
+import { NearBindgen, near, call, view, UnorderedMap } from 'near-sdk-js';
 
 // Simple task type
 type Task = {
@@ -15,13 +15,13 @@ type Task = {
 class HelloNear {
   greeting: string = 'Hello';
   validator: string = '';
-  tasks: Task[] = [];
+  tasks: UnorderedMap<Task> = new UnorderedMap<Task>("t");
   nextId: number = 1;
 
   static schema = {
     greeting: 'string',
     validator: 'string',
-    tasks: 'array',
+    tasks: { class: UnorderedMap, value: 'object' },
     nextId: 'number'
   };
 
@@ -61,13 +61,53 @@ class HelloNear {
       user
     };
     
-    this.tasks.push(task);
+    this.tasks.set(id.toString(), task);
     near.log(`Task registered with ID: ${id}`);
     return id;
   }
   
+  @call({})
+  validate_task({ id, result }: { id: number; result: string }): void {
+    // Check if caller is the validator
+    if (this.validator === "") {
+      near.log("No validator has been set");
+      return;
+    }
+    
+    if (near.predecessorAccountId() !== this.validator) {
+      near.log("Only the validator can validate tasks");
+      return;
+    }
+    
+    // Get the task
+    const taskId = id.toString();
+    const task = this.tasks.get(taskId);
+    
+    if (!task) {
+      near.log(`Task with ID ${id} not found`);
+      return;
+    }
+    
+    if (task.status !== 0) {
+      near.log("Task must be in REGISTERED status");
+      return;
+    }
+    
+    // Update the task
+    task.status = 1; // 1 = verified
+    task.result = result;
+    this.tasks.set(taskId, task);
+    
+    near.log(`Task ${id} validated with result: ${result}`);
+  }
+  
   @view({})
   get_all_tasks(): Task[] {
-    return this.tasks;
+    return this.tasks.toArray().map(([_, task]) => task);
+  }
+  
+  @view({})
+  get_task({ id }: { id: number }): Task | null {
+    return this.tasks.get(id.toString()) || null;
   }
 }

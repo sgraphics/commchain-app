@@ -1,6 +1,8 @@
 DEFINE_NEAR_METHOD(get_all_tasks)
 DEFINE_NEAR_METHOD(get_greeting)
+DEFINE_NEAR_METHOD(get_task)
 DEFINE_NEAR_METHOD(get_validator)
 DEFINE_NEAR_METHOD(register_task)
 DEFINE_NEAR_METHOD(set_greeting)
 DEFINE_NEAR_METHOD(set_validator)
+DEFINE_NEAR_METHOD(validate_task)
