@@ -7,6 +7,7 @@ import { encode as encodeBase64, decode as decodeBase64 } from '@stablelib/base6
 import { encode as encodeUTF8 } from '@stablelib/utf8';
 import { uploadToStoracha } from '../utils/storacha';
 import { getTaskById, Task } from '../data/mockTasks';
+import OpenAI from "openai";
 
 // Public key for encryption (store this in your .env.local as NEXT_PUBLIC_RSA_PUBLIC_KEY)
 // It's safe to expose the public key
@@ -44,7 +45,7 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
   const [currentTask, setCurrentTask] = useState<Task | null>(null);
   const [itemCount, setItemCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { accountId, contract } = useNearWallet();
+  const { accountId, contract, selector, aiAuth } = useNearWallet();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load task details when taskId changes
@@ -190,6 +191,7 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
     }
     
     try {
+      setIsUploading(true);
       let evidence = '';
       
       // If there's an image, encrypt and upload it
@@ -200,27 +202,96 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
         console.log("Image uploaded with CID:", evidence);
       }
 
-      // Add count to evidence if required
-      if (currentTask?.template?.includes('COUNT')) {
-        evidence = evidence ? `${evidence}|count:${itemCount}` : `count:${itemCount}`;
+      if (!currentTask) {
+        console.error("Cannot register task: currentTask is null");
+        throw new Error("No task selected");
       }
       
-      // Register the task on the blockchain
+      // Register the task with ONLY the evidence CID
       console.log("Registering task on blockchain...");
-      const result = await contract.register_task({ taskId: currentTask.id, evidence });
-      console.log("Task registration result:", result);
+      const registerParams = { 
+        taskId: currentTask.id, 
+        evidence: evidence // Just the IPFS image ID
+      };
       
-      // Clear the form
+      // Call the contract to register the task
+      const taskId = await contract.register_task(registerParams);
+      console.log("Task registration result:", taskId);
+      
+      // Clear the form immediately to allow user to continue
       setUploadedImage(null);
       setItemCount(0);
       
-      // Reload tasks
+      // Reload tasks to show the new submission
       const allTasks = await contract.get_all_tasks();
-      let filteredTasks = taskId ? allTasks.filter(task => task.taskId === taskId) : allTasks;
+      let filteredTasks = taskId ? allTasks.filter(task => task.taskId === currentTask.id) : allTasks;
       const sortedTasks = filteredTasks.sort((a, b) => b.timestamp - a.timestamp);
       setTasks(sortedTasks);
+      
+      // Start AI verification in the background if needed - don't await this
+      if (currentTask?.ai_verification_instructions) {
+        console.log("Starting AI verification process in background");
+        startAIVerification(currentTask, evidence, itemCount, taskId, aiAuth)
+          .then((result) => {
+            console.log("AI verification completed:", result);
+          })
+          .catch((error) => {
+            console.error("AI verification failed:", error);
+          });
+      }
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error("Error sending message:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      alert(`Error: ${errorMessage}`);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Separate function to handle AI verification in the background
+  const startAIVerification = async (
+    task: Task, 
+    evidence: string, 
+    count: number, 
+    taskId: number,
+    authToken: string | null
+  ): Promise<string> => {
+    try {
+      console.log("Getting AI verification with instructions:", task.ai_verification_instructions);
+      
+      if (!authToken) {
+        console.log("No AI auth token available - user may need to re-login to get AI verification");
+        return "AI verification skipped - please log out and log back in to enable AI verification";
+      }
+      
+      // Call our server-side API instead of directly using OpenAI
+      const response = await fetch('/api/ai-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          taskId: task.id,
+          blockchainId: taskId.toString(), // Pass the blockchain task ID
+          authToken: authToken
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`AI verification API error (${response.status}): ${errorText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(`AI service error: ${data.error}`);
+      }
+      
+      return data.result;
+    } catch (error) {
+      console.error("Error during AI verification:", error);
+      return "Error during AI verification: " + (error instanceof Error ? error.message : String(error));
     }
   };
 
