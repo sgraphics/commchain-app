@@ -240,19 +240,17 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
     }
   };
 
-  // Function to render task details - simplified
+  // Function to render task details
   const renderTaskDetails = () => {
     if (!currentTask) return null;
 
     return (
-      <div className="p-4 rounded-2xl">
-        <div className="bg-[#1a1328] rounded-2xl overflow-hidden">
-          
+      <div className="p-4">
+        <div className="bg-[#1a1328] rounded-2xl overflow-hidden" style={{borderRadius: '15px'}}>
           {/* Task content - simple flex layout */}
           <div className="flex flex-row">
             {/* Left side - task description */}
             <div className="p-4 flex-1">
-              
               <h2 className="text-xl font-semibold">{currentTask.name}</h2>
               <div className="text-sm text-gray-400 mt-1 flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
@@ -263,49 +261,32 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
               </div>
               <p className="text-sm mt-4">{currentTask.instructions}</p>
             </div>
-            
-            {/* Vertical divider */}
-            <div className="w-px bg-gray-700"></div>
-            
+
             {/* Right side - reward and verifiers */}
-            <div className="p-4 flex items-center justify-center space-x-6" style={{ width: '240px' }}>
-              {/* Reward */}
-              <div className="flex flex-col items-center">
-                <div className="text-2xl font-bold">
-                  {currentTask.reward_usdc} USDC
+            <div className="p-4 flex flex-col items-end">
+              <div className="bg-[#281e3c] rounded-2xl flex items-center" style={{borderRadius: '15px'}}>
+                {/* Reward amount and unit */}
+                <div className="flex flex-col items-start px-4 py-3">
+                  <div className="text-3xl">
+                    {currentTask.reward_usdc} USDC
+                  </div>
+                  <div className="text-sm text-gray-400">
+                    per item
+                  </div>
                 </div>
-                <div className="text-sm text-gray-400">
-                  {currentTask.reward_unit && currentTask.reward_unit > 1 ? 
-                    `per ${currentTask.reward_unit} units` : 
-                    'per item'}
+
+                {/* Verifier icon and label */}
+                <div className="flex flex-col items-center px-4 py-3 border-l border-gray-700">
+                  <div className="w-6 h-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                  </div>
+                  <div className="text-sm text-gray-400 mt-1">
+                    verifiers
+                  </div>
                 </div>
-              </div>
-              
-              {/* Vertical divider */}
-              <div className="h-16 w-0.5 bg-gray-600"></div>
-              
-              {/* Verifiers */}
-              <div className="flex flex-col items-center">
-                <div className="flex space-x-2">
-                  {currentTask.ai_verification_instructions && (
-                    <div className="bg-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                        <circle cx="12" cy="14" r="2"></circle>
-                      </svg>
-                    </div>
-                  )}
-                  
-                  {currentTask.human_verification_instructions && (
-                    <div className="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                      </svg>
-                    </div>
-                  )}
-                </div>
-                <div className="text-sm text-gray-400 mt-3">verifiers</div>
               </div>
             </div>
           </div>

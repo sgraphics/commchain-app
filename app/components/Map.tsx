@@ -26,8 +26,8 @@ export default function Map({ isFullscreen, tasks, selectedTaskId, onTaskSelect 
         attributionControl: false
       }).setView([49.0, 31.0], 6);
       
-      // Add medium-dark monochrome map tiles
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+      // Add grayscale map tiles
+      L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
         subdomains: 'abcd',
         maxZoom: 19
@@ -106,16 +106,16 @@ export default function Map({ isFullscreen, tasks, selectedTaskId, onTaskSelect 
     <div id="map" className="w-full h-full">
       <style jsx global>{`
         .leaflet-container {
-          background-color: #2d2d3a;
+          background-color: #e8e8e8;
           outline: none;
         }
         .leaflet-control-zoom a {
-          background-color: #3d3d4a !important;
-          color: #e0e0e0 !important;
-          border-color: #4d4d5a !important;
+          background-color: #ffffff !important;
+          color: #333333 !important;
+          border-color: #cccccc !important;
         }
         .leaflet-control-zoom a:hover {
-          background-color: #4d4d5a !important;
+          background-color: #f5f5f5 !important;
         }
         .custom-div-icon {
           background: transparent;
@@ -131,13 +131,13 @@ export default function Map({ isFullscreen, tasks, selectedTaskId, onTaskSelect 
           justify-content: center;
           color: black;
           font-weight: bold;
-          box-shadow: 0 0 0 2px #2d2d3a, 0 0 0 4px rgba(255,255,255,0.15);
+          box-shadow: 0 0 0 2px white, 0 0 0 4px rgba(0,0,0,0.2);
           transition: all 0.2s ease;
         }
         .marker-pin.selected {
           background-color: #ffffff;
           transform: scale(1.2);
-          box-shadow: 0 0 0 2px #2d2d3a, 0 0 10px 4px rgba(255,255,255,0.6);
+          box-shadow: 0 0 0 2px white, 0 0 10px 4px rgba(0,0,0,0.3);
           z-index: 1000;
         }
         .urgency {
@@ -145,14 +145,14 @@ export default function Map({ isFullscreen, tasks, selectedTaskId, onTaskSelect 
           color: black;
         }
         .custom-tooltip {
-          background-color: #3d3d4a;
-          border: 1px solid #4d4d5a;
-          color: #e0e0e0;
+          background-color: white;
+          border: 1px solid #cccccc;
+          color: #333333;
           font-family: sans-serif;
           font-size: 12px;
           padding: 4px 8px;
           border-radius: 4px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+          box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
       `}</style>
     </div>
