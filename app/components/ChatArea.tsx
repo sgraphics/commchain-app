@@ -42,6 +42,7 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
   const [tasks, setTasks] = useState<TaskMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentTask, setCurrentTask] = useState<Task | null>(null);
+  const [itemCount, setItemCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { accountId, contract } = useNearWallet();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -184,18 +185,12 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
 
   // Function to handle sending a message
   const handleSendMessage = async () => {
-    if ((!message && !uploadedImage) || !contract || !accountId) {
-      console.log("Cannot send message:", {
-        hasMessage: !!message,
-        hasUploadedImage: !!uploadedImage,
-        hasContract: !!contract,
-        hasAccountId: !!accountId
-      });
+    if ((!uploadedImage && currentTask?.template?.includes('PHOTO')) || !contract || !accountId) {
       return;
     }
     
     try {
-      let evidence = message;
+      let evidence = '';
       
       // If there's an image, encrypt and upload it
       if (uploadedImage) {
@@ -204,26 +199,23 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
         evidence = await encryptAndUploadImage(imageData);
         console.log("Image uploaded with CID:", evidence);
       }
-      
-      // Use the selected taskId from props or generate a new one if not provided
-      const currentTaskId = taskId || `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      console.log("Using task ID:", currentTaskId);
+
+      // Add count to evidence if required
+      if (currentTask?.template?.includes('COUNT')) {
+        evidence = evidence ? `${evidence}|count:${itemCount}` : `count:${itemCount}`;
+      }
       
       // Register the task on the blockchain
       console.log("Registering task on blockchain...");
-      const result = await contract.register_task({ taskId: currentTaskId, evidence });
+      const result = await contract.register_task({ taskId: currentTask.id, evidence });
       console.log("Task registration result:", result);
       
       // Clear the form
-      setMessage('');
       setUploadedImage(null);
+      setItemCount(0);
       
-      // Reload tasks to show the new one
-      console.log("Reloading tasks after sending message...");
+      // Reload tasks
       const allTasks = await contract.get_all_tasks();
-      console.log("Reloaded tasks:", allTasks);
-      
-      // Filter tasks by taskId if provided, and sort
       let filteredTasks = taskId ? allTasks.filter(task => task.taskId === taskId) : allTasks;
       const sortedTasks = filteredTasks.sort((a, b) => b.timestamp - a.timestamp);
       setTasks(sortedTasks);
@@ -379,73 +371,64 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
         <div ref={messagesEndRef} />
       </div>
       
-      {/* Input area */}
-      <div className="p-4 border-t border-gray-700">
-        {uploadedImage && (
-          <div className="mb-3 relative">
-            <div className="relative h-32 w-32 rounded-md overflow-hidden">
-              <img 
-                src={uploadedImage} 
-                alt="Uploaded image" 
-                className="object-cover w-full h-full"
-              />
+      {/* Bottom input panel */}
+      <div className="p-4">
+        <div className="bg-[#ffddd0] rounded-2xl p-4 text-black" style={{borderRadius: '15px'}}>
+          <div className="flex justify-between items-center">
+            {/* Left side - text */}
+            <div>
+              <div className="text-sm font-medium">
+                Upload image and specify item count
+              </div>
+              <div className="text-xs text-gray-600">
+                Upload image as evidence to get it analyzed
+              </div>
+            </div>
+            
+            {/* Right side - controls, all in one row */}
+            <div className="flex items-center space-x-2">
               <button 
-                onClick={handleRemoveImage}
-                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                style={{border: '1px solid #000000', width: '40px', height: '40px'}}
+                onClick={() => setItemCount(Math.max(0, itemCount - 1))}
+                className="bg-white p-2 hover:bg-gray-100 text-black rounded-lg flex items-center justify-center"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                -
+              </button>
+              
+              <div className="bg-white text-black rounded-lg w-12 h-10 flex items-center justify-center"
+              
+              style={{border: '1px solid #000000', width: '40px', height: '40px', margin: '0px 10px', backgroundColor: '#ffffff'}}
+              >
+                {itemCount}
+              </div>
+              
+              <button 
+                style={{border: '1px solid #000000', width: '40px', height: '40px'}}
+                onClick={() => setItemCount(itemCount + 1)}
+                className="bg-white hover:bg-gray-100 text-black w-10 h-10 rounded-lg flex items-center justify-center"
+              >
+                +
+              </button>
+              
+              <button
+                onClick={handleSendMessage}
+                style={{height: '40px', backgroundColor: '#ff8f74', margin: '0px 10px'}}
+                className="bg-[#ff8f74] hover:bg-[#ff6b35] text-black h-10 px-4 rounded-lg"
+              >
+                Upload
+              </button>
+              
+              <button
+                onClick={handleSendMessage} 
+                style={{width: '40px', height: '40px', backgroundColor: '#ff8f74'}}
+                className="bg-[#ff8f74] hover:bg-[#ff8f74] text-black w-10 h-10 rounded-lg flex items-center justify-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h13M12 5l7 7-7 7"/>
                 </svg>
               </button>
             </div>
           </div>
-        )}
-        
-        <div className="flex items-center">
-          <input
-            type="text"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder={currentTask ? 
-              `Report for ${currentTask.name}...` : 
-              "Type a message..."
-            }
-            className="flex-grow bg-[#2a1e3d] text-white rounded-l-lg px-4 py-2 focus:outline-none"
-          />
-          
-          <label className="cursor-pointer bg-[#2a1e3d] text-white px-3 py-2 hover:bg-[#3a2e4d] transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <circle cx="8.5" cy="8.5" r="1.5"></circle>
-              <polyline points="21 15 16 10 5 21"></polyline>
-            </svg>
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageSelect}
-              ref={fileInputRef}
-            />
-          </label>
-          
-          <button
-            onClick={handleSendMessage}
-            disabled={(!message && !uploadedImage) || isUploading}
-            className={`
-              bg-[#ff6b35] text-white rounded-r-lg px-4 py-2
-              ${(!message && !uploadedImage) || isUploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#ff8c35] transition-colors'}
-            `}
-          >
-            {isUploading ? (
-              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-            )}
-          </button>
         </div>
       </div>
     </div>
