@@ -67,7 +67,8 @@ export async function POST(request: NextRequest) {
           console.warn("WARNING: Auth token is missing callbackUrl field - this may be optional");
         }
       } catch (e) {
-        console.log("- authToken is not valid JSON:", e.message);
+        console.log("- authToken is not valid JSON:", 
+          e instanceof Error ? e.message : String(e));
         return NextResponse.json(
           { error: 'Invalid auth token format' },
           { status: 400 }
