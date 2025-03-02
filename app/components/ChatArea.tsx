@@ -264,30 +264,47 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
 
             {/* Right side - reward and verifiers */}
             <div className="p-4 flex flex-col items-end">
-              <div className="bg-[#281e3c] rounded-2xl flex items-center" style={{borderRadius: '15px'}}>
-                {/* Reward amount and unit */}
-                <div className="flex flex-col items-start px-4 py-3">
-                  <div className="text-3xl">
-                    {currentTask.reward_usdc} USDC
-                  </div>
-                  <div className="text-sm text-gray-400">
-                    per item
-                  </div>
-                </div>
+              {/* Only show the badge if we have either rewards or verifiers */}
+              {(currentTask.reward_usdc || currentTask.ai_verification_instructions || currentTask.human_verification_instructions) && (
+                <div className="bg-[#281e3c] rounded-2xl flex items-center" style={{borderRadius: '15px'}}>
+                  {/* Reward amount and unit - only if reward exists */}
+                  {currentTask.reward_usdc && (
+                    <div className="flex flex-col items-start px-4 py-3">
+                      <div className="text-3xl">
+                        {currentTask.reward_usdc} USDC
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        per item
+                      </div>
+                    </div>
+                  )}
 
-                {/* Verifier icon and label */}
-                <div className="flex flex-col items-center px-4 py-3 border-l border-gray-700">
-                  <div className="w-6 h-6">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                      <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                  </div>
-                  <div className="text-sm text-gray-400 mt-1">
-                    verifiers
-                  </div>
+                  {/* Verifier section - only if any verification type exists */}
+                  {(currentTask.ai_verification_instructions || currentTask.human_verification_instructions) && (
+                    <div className="flex flex-col items-center px-4 py-3 border-l border-gray-700">
+                      <div className="w-6 h-6">
+                        {currentTask.ai_verification_instructions ? (
+                          // AI verifier icon
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="12" cy="14" r="2"></circle>
+                            <path d="M8 8h.01M16 8h.01"></path>
+                          </svg>
+                        ) : currentTask.human_verification_instructions ? (
+                          // Human verifier icon
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                          </svg>
+                        ) : null}
+                      </div>
+                      <div className="text-sm text-gray-400 mt-1">
+                        verifiers
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
