@@ -8,18 +8,11 @@ import { encode as encodeUTF8 } from '@stablelib/utf8';
 import { uploadToStoracha } from '../utils/storacha';
 import { getTaskById, Task } from '../data/mockTasks';
 import OpenAI from "openai";
+import nacl from 'tweetnacl';
 
 // Public key for encryption (store this in your .env.local as NEXT_PUBLIC_RSA_PUBLIC_KEY)
 // It's safe to expose the public key
-const RSA_PUBLIC_KEY = process.env.NEXT_PUBLIC_RSA_PUBLIC_KEY || `-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1qxLVfXq84WpekOzuJBS
-GcI5H+QHJSsr5xmNxPQTLOM7KHtw/6WRiOIQ1Ej6CuvxlxIKLcwFttWZCCEJX9vG
-cidXgKzPSrm6dbjAnjYZnL32Fnf0XjyPg0e4l3z163lDWkfu2o/rzVoZDCmx1lo0
-gOJaJhXhDogC/NYerjLnplAo1PLWJAY36qHiEpogL33vns2J99IyiZ/yCyPxXWgY
-kD2KhCg4AVPEKjt4pWqnczaCIXBeFAQS0R4TtAJMwTUbxzdoJO4jrPAJRJ7vKyF3
-iQ/oz9IHAPRdazBSmSsTS4+jEd1nSNO/+GdoOIzgxENc6KRbmvR0tyhpWbvuLC4f
-PwIDAQAB
------END PUBLIC KEY-----`;
+const RSA_PUBLIC_KEY = process.env.NEXT_PUBLIC_RSA_PUBLIC_KEY || "";
 
 // Task message interface
 interface TaskMessage {
@@ -121,36 +114,39 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
   // Function to encrypt and upload image
   async function encryptAndUploadImage(imageData: Uint8Array): Promise<string> {
     try {
-      console.log('Starting encryption process...');
-      // Generate a random symmetric key for content encryption
-      const symmetricKey = crypto.randomBytes(32);  // 32 bytes (256 bits) for AES-256
+      console.log('Starting asymmetric encryption process with NaCl Box...');
       
-      // Generate an IV for AES encryption
-      const iv = crypto.randomBytes(16);
+      // Get the server's public key from environment
+      const publicKeyBase64 = process.env.NEXT_PUBLIC_ENCRYPTION_PUBLIC_KEY || "YOUR_PUBLIC_KEY_BASE64";
       
-      console.log('Encrypting data with AES...');
-      // Encrypt the image with AES (symmetric encryption)
-      const cipher = crypto.createCipheriv('aes-256-cbc', symmetricKey, iv);
-      const encryptedData = Buffer.concat([
-        cipher.update(Buffer.from(imageData)),
-        cipher.final()
-      ]);
+      // Decode the base64 public key
+      let publicKey: Uint8Array;
+      if (publicKeyBase64.startsWith('b64:')) {
+        publicKey = decodeBase64(publicKeyBase64.substring(4));
+      } else {
+        throw new Error('Invalid public key format - must start with b64:');
+      }
       
-      console.log('Encrypting symmetric key with RSA...');
-      // Encrypt the symmetric key with the RSA public key
-      const encryptedKey = crypto.publicEncrypt(
-        {
-          key: RSA_PUBLIC_KEY,
-          padding: crypto.constants.RSA_PKCS1_OAEP_PADDING
-        },
-        symmetricKey
+      // Generate a ephemeral keypair for this encryption
+      const ephemeralKeyPair = nacl.box.keyPair();
+      
+      // Generate a random nonce
+      const nonce = nacl.randomBytes(nacl.box.nonceLength);
+      
+      console.log('Encrypting data with NaCl box...');
+      // Create a box with our ephemeral secret key and the server's public key
+      const encryptedData = nacl.box(
+        imageData,
+        nonce,
+        publicKey,
+        ephemeralKeyPair.secretKey
       );
       
-      // Create the payload
+      // Create the payload, including our ephemeral public key
       const payload = {
-        iv: iv.toString('base64'),
-        encryptedData: encryptedData.toString('base64'),
-        encryptedKey: encryptedKey.toString('base64')
+        nonce: encodeBase64(nonce),
+        encryptedData: encodeBase64(encryptedData),
+        senderPublicKey: encodeBase64(ephemeralKeyPair.publicKey)
       };
       
       // Serialize and upload

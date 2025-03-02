@@ -2,9 +2,9 @@ import base64
 import json
 import sys
 import os
-import nacl.secret
 import nacl.public
 from nacl.public import PrivateKey, PublicKey, Box
+import hashlib
 
 def main():
     # Get private key from environment or command line
@@ -24,30 +24,38 @@ def main():
     with open(encrypted_payload_path, 'r') as f:
         encrypted_payload = json.load(f)
     
+    # Check if we have all required fields for asymmetric decryption
+    if not all(k in encrypted_payload for k in ['nonce', 'encryptedData', 'senderPublicKey']):
+        print("Invalid payload format - missing required fields for asymmetric decryption")
+        sys.exit(1)
+    
     # Convert from Base64
-    private_key_bytes = base64.b64decode(private_key_base64)
+    if not private_key_base64.startswith('b64:'):
+        print("Invalid private key format - must start with b64:")
+        sys.exit(1)
+    
+    private_key_bytes = base64.b64decode(private_key_base64[4:])
     nonce = base64.b64decode(encrypted_payload['nonce'])
     encrypted_data = base64.b64decode(encrypted_payload['encryptedData'])
-    encrypted_key = base64.b64decode(encrypted_payload['encryptedKey'])
+    sender_public_key_bytes = base64.b64decode(encrypted_payload['senderPublicKey'])
     
-    # Create the private key object
-    private_key = PrivateKey(private_key_bytes)
+    # Ensure the key is the right length for NaCl (32 bytes)
+    if len(private_key_bytes) != nacl.public.PrivateKey.SIZE:
+        print(f"Invalid private key length: {len(private_key_bytes)}. Expected {nacl.public.PrivateKey.SIZE}")
+        sys.exit(1)
     
     try:
-        # Decrypt the symmetric key
-        # In Python's PyNaCl, we need to use Box differently than in TweetNaCl.js
-        # We need to derive the public key from our private key
-        public_key = private_key.public_key
+        # Create the private key object
+        private_key = PrivateKey(private_key_bytes)
         
-        # Create a Box with our private key and our own public key (since the encrypted key was created with our public key)
-        box = Box(private_key, public_key)
+        # Create the sender's public key object
+        sender_public_key = PublicKey(sender_public_key_bytes)
         
-        # Decrypt the symmetric key
-        symmetric_key = box.decrypt(encrypted_key)
+        # Create a Box with our private key and the sender's public key
+        box = Box(private_key, sender_public_key)
         
-        # Use the symmetric key to decrypt the data
-        secret_box = nacl.secret.SecretBox(symmetric_key)
-        decrypted_data = secret_box.decrypt(encrypted_data, nonce)
+        # Decrypt the data
+        decrypted_data = box.decrypt(encrypted_data, nonce=nonce)
         
         # Write the decrypted data to a file
         output_path = 'decrypted-evidence.bin'

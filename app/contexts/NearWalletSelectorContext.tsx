@@ -433,7 +433,7 @@ export const NearWalletSelectorProvider: React.FC<{ children: React.ReactNode }>
             message: "Login to NEAR AI",
             // Retrieve the values we stored before redirecting to wallet
             nonce: sessionStorage.getItem('nearAINonce') || "",
-            recipient: sessionStorage.getItem('nearAIRecipient') || "toolblox.near",
+            recipient: sessionStorage.getItem('nearAIRecipient') || "ai.near",
             callbackUrl: sessionStorage.getItem('nearAICallbackUrl') || ""
           };
           

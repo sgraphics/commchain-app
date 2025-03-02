@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
     
     console.log("Running assistant...");
     // Run the assistant
-    const assistant_id = "toolblox.near/near/latest";
+    const assistant_id = "commchain.near/completions/latest";
     const run = await openai.beta.threads.runs.createAndPoll(
       thread.id,
       { assistant_id }
