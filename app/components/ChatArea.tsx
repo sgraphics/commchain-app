@@ -395,9 +395,8 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
                 -
               </button>
               
-              <div className="bg-white text-black rounded-lg w-12 h-10 flex items-center justify-center"
-              
-              style={{border: '1px solid #000000', width: '40px', height: '40px', margin: '0px 10px', backgroundColor: '#ffffff'}}
+              <div className="bg-white text-black rounded-lg flex items-center justify-center"
+                style={{border: '1px solid #000000', width: '40px', height: '40px', margin: '0px 10px', backgroundColor: '#ffffff'}}
               >
                 {itemCount}
               </div>
@@ -410,14 +409,51 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
                 +
               </button>
               
-              <button
-                onClick={handleSendMessage}
-                style={{height: '40px', backgroundColor: '#ff8f74', margin: '0px 10px'}}
-                className="bg-[#ff8f74] hover:bg-[#ff6b35] text-black h-10 px-4 rounded-lg"
-              >
-                Upload
-              </button>
+              {/* File input element (hidden) */}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageSelect}
+                ref={fileInputRef}
+              />
               
+              {/* Upload/thumbnail button */}
+              {uploadedImage ? (
+                <>
+                  {/* Thumbnail preview when image is selected */}
+                  <div 
+                    style={{border: '1px solid #000000', width: '40px', height: '40px', margin: '0px 10px'}}
+                    className="relative bg-white rounded-lg overflow-hidden"
+                  >
+                    <img 
+                      src={uploadedImage} 
+                      alt="Preview" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  
+                  {/* Remove button */}
+                  <button
+                    onClick={handleRemoveImage}
+                    style={{height: '40px',  margin: '0px 10px',border: '1px solid #000000'}}
+                    className="bg-[#ff8f74] hover:bg-[#ff6b35] text-black h-10 px-4 rounded-lg"
+                  >
+                    Remove
+                  </button>
+                </>
+              ) : (
+                /* Upload button when no image is selected */
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{height: '40px', backgroundColor: '#ff8f74', margin: '0px 10px'}}
+                  className="bg-[#ff8f74] hover:bg-[#ff6b35] text-black h-10 px-4 rounded-lg"
+                >
+                  Upload
+                </button>
+              )}
+              
+              {/* Send button */}
               <button
                 onClick={handleSendMessage} 
                 style={{width: '40px', height: '40px', backgroundColor: '#ff8f74'}}
