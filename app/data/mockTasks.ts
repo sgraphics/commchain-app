@@ -67,22 +67,6 @@ export const taskData: Task[] = [
     reward_unit: 1
   },
   {
-    id: "task-4",
-    name: "Evacuate civilians",
-    location: "Zaporizhzhia region",
-    coordinates: [47.8388, 35.1396],
-    instructions: "Assist in civilian evacuation from conflict zone. ",
-    ai_verification_instructions: null,
-    human_verification_instructions: null,
-    template: "COUNT",
-    can_open: true,
-    participants: 12,
-    urgency: 9,
-    commander: "evacuation-team.near",
-    reward_usdc: null,
-    reward_unit: null
-  },
-  {
     id: "task-5",
     name: "Conduct drone hit",
     location: "Eastern front",

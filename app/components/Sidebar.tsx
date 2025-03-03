@@ -110,10 +110,7 @@ export default function Sidebar({ isMobile, currentTaskId, onTaskSelect }: Sideb
       </div>
 
       {/* Tasks Section - Now using the JSON data */}
-      <div className="tasks-section mt-6">
-        <h2 className={`text-gray-400 ${isCollapsed ? 'text-center text-xs mb-2' : 'px-4 mb-3'} font-segoe`}>
-          {isCollapsed ? 'Tasks' : 'Tasks'}
-        </h2>
+      <div className="tasks-section mt-2">
         <div className={`task-list ${isCollapsed ? 'px-2' : 'px-4'}`}>
           {taskData.map((task) => (
             <div 
@@ -174,7 +171,7 @@ export default function Sidebar({ isMobile, currentTaskId, onTaskSelect }: Sideb
 
       {/* Map section - Edge to edge, 1/3 height from bottom */}
       <div className="mt-auto w-full">
-        <div className="relative w-full h-[33.333vh]">
+        <div className="relative w-full h-[25vh]">
           <div className={`w-full h-full ${isMapFullscreen ? 'fixed inset-0 z-50 h-screen' : ''}`}>
             <Map 
               isFullscreen={isMapFullscreen} 
