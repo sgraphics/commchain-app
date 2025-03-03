@@ -5,10 +5,11 @@ import Sidebar from './Sidebar';
 import ChatArea from './ChatArea';
 import LoginPage from './LoginPage';
 import { useNearWallet } from '../contexts/NearWalletSelectorContext';
+import { taskData } from '@/app/data/mockTasks';
 
 export default function AppLayout() {
   const [isMobile, setIsMobile] = useState(false);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>(undefined);
+  const [selectedTaskId, setSelectedTaskId] = useState<string>(taskData[0]?.id || '');
   const { accountId, aiAuth, getAiAuthentication } = useNearWallet();
   const [isLoading, setIsLoading] = useState(false);
   

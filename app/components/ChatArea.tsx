@@ -6,7 +6,7 @@ import * as crypto from 'crypto';
 import { encode as encodeBase64, decode as decodeBase64 } from '@stablelib/base64';
 import { encode as encodeUTF8 } from '@stablelib/utf8';
 import { uploadToStoracha } from '../utils/storacha';
-import { getTaskById, Task } from '../data/mockTasks';
+import { getTaskById, taskData, Task } from '../data/mockTasks';
 import OpenAI from "openai";
 import nacl from 'tweetnacl';
 
@@ -19,8 +19,9 @@ interface TaskMessage {
   id: number;
   taskId: string;
   evidence: string;
-  status: string;
+  status: number;
   user: string;
+  result: string;
   timestamp: number;
 }
 
@@ -40,6 +41,7 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { accountId, contract, selector, aiAuth } = useNearWallet();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load task details when taskId changes
   useEffect(() => {
@@ -51,44 +53,60 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
     }
   }, [taskId]);
 
-  // Load tasks from the contract
+  // Function to load tasks from the contract
+  const loadTasks = async () => {
+    console.log("ChatArea: Loading tasks...");
+    
+    if (!contract) {
+      console.log("No contract available, skipping task loading");
+      return;
+    }
+    
+    try {
+      console.log("Calling contract.get_all_tasks()");
+      const allTasks = await contract.get_all_tasks();
+      console.log("Received tasks:", allTasks);
+      
+      // Filter tasks by ID > 54 first
+      const idFilteredTasks = allTasks.filter(task => task.id > 54);
+      console.log("Tasks filtered by ID > 54:", idFilteredTasks);
+      
+      // Then filter by taskId if provided
+      let filteredTasks = idFilteredTasks;
+      if (taskId) {
+        filteredTasks = idFilteredTasks.filter(task => task.taskId === taskId);
+        console.log("Filtered tasks for taskId", taskId, ":", filteredTasks);
+      }
+      
+      // Sort tasks by timestamp (newest first)
+      const sortedTasks = filteredTasks.sort((a, b) => b.timestamp - a.timestamp);
+      console.log("Sorted tasks:", sortedTasks);
+      setTasks(sortedTasks);
+    } catch (error) {
+      console.error('Error loading tasks:', error);
+    }
+  };
+
+  // Initial load of tasks
   useEffect(() => {
-    const loadTasks = async () => {
-      console.log("ChatArea: Loading tasks...");
-      console.log("Contract available:", !!contract);
-      
-      if (!contract) {
-        console.log("No contract available, skipping task loading");
-        return;
-      }
-      
+    const initialLoad = async () => {
       setIsLoading(true);
-      try {
-        console.log("Calling contract.get_all_tasks()");
-        const allTasks = await contract.get_all_tasks();
-        console.log("Received tasks:", allTasks);
-        
-        // Filter tasks by taskId if provided
-        let filteredTasks = allTasks;
-        if (taskId) {
-          filteredTasks = allTasks.filter(task => task.taskId === taskId);
-          console.log("Filtered tasks for taskId", taskId, ":", filteredTasks);
-        }
-        
-        // Sort tasks by timestamp (newest first)
-        const sortedTasks = filteredTasks.sort((a, b) => b.timestamp - a.timestamp);
-        console.log("Sorted tasks:", sortedTasks);
-        setTasks(sortedTasks);
-      } catch (error) {
-        console.error('Error loading tasks:', error);
-        setTasks([]);
-      } finally {
-        setIsLoading(false);
-      }
+      await loadTasks();
+      setIsLoading(false);
     };
     
-    loadTasks();
-  }, [contract, taskId]);  // Re-run when taskId changes
+    initialLoad();
+    
+    // Set up polling interval
+    pollingIntervalRef.current = setInterval(loadTasks, 5000);
+    
+    // Clean up interval on unmount
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [contract, taskId]);  // Re-run when contract or taskId changes
 
   // Scroll to bottom when new tasks are loaded
   useEffect(() => {
@@ -182,7 +200,12 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
 
   // Function to handle sending a message
   const handleSendMessage = async () => {
-    if ((!uploadedImage && currentTask?.template?.includes('PHOTO')) || !contract || !accountId) {
+    // Check if we need a photo but don't have one
+    const needsPhoto = currentTask?.template?.includes('PHOTO');
+    const needsCount = currentTask?.template?.includes('COUNT');
+    
+    // Validate requirements based on template
+    if ((needsPhoto && !uploadedImage) || !contract || !accountId) {
       return;
     }
     
@@ -190,8 +213,8 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
       setIsUploading(true);
       let evidence = '';
       
-      // If there's an image, encrypt and upload it
-      if (uploadedImage) {
+      // If there's an image and we need one, encrypt and upload it
+      if (uploadedImage && needsPhoto) {
         console.log("Encrypting and uploading image...");
         const imageData = decodeBase64(uploadedImage.split(',')[1]);
         evidence = await encryptAndUploadImage(imageData);
@@ -203,11 +226,12 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
         throw new Error("No task selected");
       }
       
-      // Register the task with ONLY the evidence CID
+      // Register the task with the evidence CID and count if needed
       console.log("Registering task on blockchain...");
       const registerParams = { 
         taskId: currentTask.id, 
-        evidence: evidence // Just the IPFS image ID
+        evidence: evidence, // The IPFS image ID
+        count: needsCount ? itemCount : undefined // Only include count if needed
       };
       
       // Call the contract to register the task
@@ -220,7 +244,10 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
       
       // Reload tasks to show the new submission
       const allTasks = await contract.get_all_tasks();
-      let filteredTasks = taskId ? allTasks.filter(task => task.taskId === currentTask.id) : allTasks;
+      // Filter by ID > 54 first
+      const idFilteredTasks = allTasks.filter(task => task.id > 54);
+      // Then filter by taskId if needed
+      let filteredTasks = currentTask ? idFilteredTasks.filter(task => task.taskId === currentTask.id) : idFilteredTasks;
       const sortedTasks = filteredTasks.sort((a, b) => b.timestamp - a.timestamp);
       setTasks(sortedTasks);
       
@@ -269,7 +296,8 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
         body: JSON.stringify({
           taskId: task.id,
           blockchainId: taskId.toString(), // Pass the blockchain task ID
-          authToken: authToken
+          authToken: authToken,
+          count: task.template.includes('COUNT') ? count : undefined // Only include count if needed
         }),
       });
       
@@ -397,11 +425,7 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
               className={`flex ${task.user === accountId ? 'justify-end' : 'justify-start'} mb-4`}
             >
               <div 
-                className={`rounded-lg p-3 max-w-xs md:max-w-md ${
-                  task.user === accountId 
-                    ? 'bg-[#ff6b35] text-white' 
-                    : 'bg-[#2a1e3d] text-white'
-                }`}
+                className={`rounded-lg p-3 max-w-xs md:max-w-md bg-[#ffddd0] text-black`}
               >
                 {/* If evidence looks like a CID, show image placeholder with download link */}
                 {task.evidence.startsWith('storj-') ? (
@@ -426,11 +450,61 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
                 )}
                 
                 <div className={`
-                  text-xs mt-1 opacity-70
-                  ${task.user === accountId ? 'text-right' : 'text-left'}
+                  text-xs mt-1 opacity-70 flex items-center
+                  ${task.user === accountId ? 'justify-end' : 'justify-start'}
                 `}>
-                  {new Date(task.timestamp).toLocaleString()}
+                  {/* Status indicator */}
+                  <div className="flex items-center mr-2">
+                    {task.status === 0 ? (
+                      <>
+                        <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 border-black mr-1"></div>
+                        <span>Pending (id: {task.id})</span>
+                      </>
+                    ) : task.status === 1 ? (
+                      <>
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1 text-red-600">
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                        <span className="text-red-600">Rejected</span>
+                      </>
+                    )}
+                  </div>
                 </div>
+                
+                {/* Show verification result if available */}
+                {task.status === 1 && task.result && (
+                  <div className="mt-2 pt-2 border-t border-black/20 text-sm">
+                    <div className="flex justify-end">
+                      <div>
+                        <span>Result: </span>
+                        {currentTask?.template?.includes('COUNT') ? (
+                          <span className="font-semibold">{task.result} item(s)</span>
+                        ) : (
+                          <span className="font-semibold">
+                            {task.result.trim() === "1" ? "accepted" : "rejected"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Reward button for verified tasks with non-zero result and available reward */}
+                    {task.status === 1 && task.result !== "0" && currentTask?.reward_usdc && (
+                      <div className="flex justify-end">
+                        <button 
+                          style={{padding: '5px 10px', marginTop: '10px'}}
+                          onClick={() => alert("Rewarding not yet implemented")}
+                          className="mt-2 bg-[#ff8f74] hover:bg-[#ff6b35] text-black px-3 py-1 rounded-md text-sm font-medium"
+                        >
+                          Reward
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ))
@@ -445,36 +519,45 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
             {/* Left side - text */}
             <div>
               <div className="text-sm font-medium">
-                Upload image and specify item count
+                {currentTask?.template === 'PHOTO' && 'Upload image as evidence'}
+                {currentTask?.template === 'COUNT' && 'Specify item count'}
+                {currentTask?.template === 'PHOTO_AND_COUNT' && 'Upload image and specify item count'}
+                {currentTask?.template === 'CHECK' && 'Confirm task completion'}
               </div>
               <div className="text-xs text-gray-600">
-                Upload image as evidence to get it analyzed
+                {currentTask?.template?.includes('PHOTO') && 'Upload image as evidence to get it analyzed'}
+                {currentTask?.template === 'COUNT' && 'Enter the count of items for verification'}
+                {currentTask?.template === 'CHECK' && 'Confirm that you have completed this task'}
               </div>
             </div>
             
             {/* Right side - controls, all in one row */}
             <div className="flex items-center space-x-2">
-              <button 
-                style={{border: '1px solid #000000', width: '40px', height: '40px'}}
-                onClick={() => setItemCount(Math.max(0, itemCount - 1))}
-                className="bg-white p-2 hover:bg-gray-100 text-black rounded-lg flex items-center justify-center"
-              >
-                -
-              </button>
-              
-              <div className="bg-white text-black rounded-lg flex items-center justify-center"
-                style={{border: '1px solid #000000', width: '40px', height: '40px', margin: '0px 10px', backgroundColor: '#ffffff'}}
-              >
-                {itemCount}
-              </div>
-              
-              <button 
-                style={{border: '1px solid #000000', width: '40px', height: '40px'}}
-                onClick={() => setItemCount(itemCount + 1)}
-                className="bg-white hover:bg-gray-100 text-black w-10 h-10 rounded-lg flex items-center justify-center"
-              >
-                +
-              </button>
+              {currentTask?.template?.includes('COUNT') && (
+                <>
+                  <button 
+                    style={{border: '1px solid #000000', width: '40px', height: '40px'}}
+                    onClick={() => setItemCount(Math.max(0, itemCount - 1))}
+                    className="bg-white p-2 hover:bg-gray-100 text-black rounded-lg flex items-center justify-center"
+                  >
+                    -
+                  </button>
+                  
+                  <div className="bg-white text-black rounded-lg flex items-center justify-center"
+                    style={{border: '1px solid #000000', width: '40px', height: '40px', margin: '0px 10px', backgroundColor: '#ffffff'}}
+                  >
+                    {itemCount}
+                  </div>
+                  
+                  <button 
+                    style={{border: '1px solid #000000', width: '40px', height: '40px'}}
+                    onClick={() => setItemCount(itemCount + 1)}
+                    className="bg-white hover:bg-gray-100 text-black w-10 h-10 rounded-lg flex items-center justify-center"
+                  >
+                    +
+                  </button>
+                </>
+              )}
               
               {/* File input element (hidden) */}
               <input
@@ -485,46 +568,63 @@ export default function ChatArea({ taskId }: ChatAreaProps) {
                 ref={fileInputRef}
               />
               
-              {/* Upload/thumbnail button */}
-              {uploadedImage ? (
-                <>
-                  {/* Thumbnail preview when image is selected */}
-                  <div 
-                    style={{border: '1px solid #000000', width: '40px', height: '40px', margin: '0px 10px'}}
-                    className="relative bg-white rounded-lg overflow-hidden"
-                  >
-                    <img 
-                      src={uploadedImage} 
-                      alt="Preview" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  
-                  {/* Remove button */}
+              {/* Upload/thumbnail button - only show when template includes PHOTO */}
+              {currentTask?.template?.includes('PHOTO') && (
+                uploadedImage ? (
+                  <>
+                    {/* Thumbnail preview when image is selected */}
+                    <div 
+                      style={{border: '1px solid #000000', width: '40px', height: '40px', margin: '0px 10px'}}
+                      className="relative bg-white rounded-lg overflow-hidden"
+                    >
+                      <img 
+                        src={uploadedImage} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    
+                    {/* Remove button */}
+                    <button
+                      onClick={handleRemoveImage}
+                      style={{height: '40px',  margin: '0px 10px',border: '1px solid #000000'}}
+                      className="bg-[#ff8f74] hover:bg-[#ff6b35] text-black h-10 px-4 rounded-lg"
+                    >
+                      Remove
+                    </button>
+                  </>
+                ) : (
+                  /* Upload button when no image is selected */
                   <button
-                    onClick={handleRemoveImage}
-                    style={{height: '40px',  margin: '0px 10px',border: '1px solid #000000'}}
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{height: '40px', backgroundColor: '#ff8f74', margin: '0px 10px'}}
                     className="bg-[#ff8f74] hover:bg-[#ff6b35] text-black h-10 px-4 rounded-lg"
                   >
-                    Remove
+                    Upload
                   </button>
-                </>
-              ) : (
-                /* Upload button when no image is selected */
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  style={{height: '40px', backgroundColor: '#ff8f74', margin: '0px 10px'}}
-                  className="bg-[#ff8f74] hover:bg-[#ff6b35] text-black h-10 px-4 rounded-lg"
-                >
-                  Upload
-                </button>
+                )
               )}
               
               {/* Send button */}
               <button
                 onClick={handleSendMessage} 
-                style={{width: '40px', height: '40px', backgroundColor: '#ff8f74'}}
-                className="bg-[#ff8f74] hover:bg-[#ff8f74] text-black w-10 h-10 rounded-lg flex items-center justify-center"
+                disabled={
+                  !currentTask || 
+                  !accountId || 
+                  (currentTask.template.includes('PHOTO') && !uploadedImage)
+                }
+                style={{
+                  width: '40px', 
+                  height: '40px', 
+                  backgroundColor: (!currentTask || !accountId || (currentTask.template.includes('PHOTO') && !uploadedImage)) 
+                    ? '#cccccc' 
+                    : '#ff8f74'
+                }}
+                className={`${
+                  (!currentTask || !accountId || (currentTask.template.includes('PHOTO') && !uploadedImage))
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-[#ff8f74] hover:bg-[#ff6b35] cursor-pointer'
+                } text-black w-10 h-10 rounded-lg flex items-center justify-center`}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M5 12h13M12 5l7 7-7 7"/>

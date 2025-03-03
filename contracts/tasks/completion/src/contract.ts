@@ -63,6 +63,28 @@ class HelloNear {
     
     this.tasks.set(id.toString(), task);
     near.log(`Task registered with ID: ${id}`);
+    
+    // Add NEAR AI HUB event log to trigger AI verification
+    const aiHubLog = {
+      standard: "nearai",
+      version: "0.1.0",
+      event: "run_agent",
+      data: [
+        {
+          message: `run verification for task ${id}`,
+          agent: "commchain.near/completions/latest",
+          max_iterations: null,
+          thread_id: null,
+          env_vars: null,
+          signer_id: user,
+          referral_id: null,
+          amount: "0"
+        }
+      ]
+    };
+    
+    near.log(`EVENT_JSON:${JSON.stringify(aiHubLog)}`);
+    
     return id;
   }
   
